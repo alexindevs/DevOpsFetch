@@ -170,7 +170,7 @@ user_details() {
                 fi
             fi
 
-            printf "%-15s %-30s %-24s %-25s %-20s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
+            printf "%-15s %-30s %-24s %-25s %-18s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
         done
     else
         if ! id "$username" &> /dev/null; then
