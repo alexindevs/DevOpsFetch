@@ -64,6 +64,7 @@ log_nginx_information() {
             echo "No Nginx configuration found for port $parameter."
         else
             for file in $files; do
+                echo ""
                 echo "Configuration file: $file"
                 grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
                 /listen/ { 
@@ -95,7 +96,6 @@ log_nginx_information() {
                     gsub(/[{};]/, "", location)
                     printf "Location Block: %s\n", location
                 }'
-            echo ""
             done
         fi
     else
