@@ -38,28 +38,28 @@ log_nginx_information() {
     fi
 
     if [ -z "$parameter" ]; then
-        echo "Nginx Domains, Ports, and Configuration Files:"
-        printf "%-30s %-10s %-50s\n" "DOMAIN" "PORT" "CONFIG FILE"
-        printf "%-30s %-10s %-50s\n" "------" "----" "-----------"
+        echo "Server Domain                           Proxy                Configuration File"
+        echo "------------                           -----                -----------------"
         
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk '
-            BEGIN { domain = ""; port = "" }
-            /listen/ { 
-                port = $2;
-                gsub(/;$/, "", port);
-            } 
+            BEGIN { domain = ""; proxy = "" }
             /server_name/ { 
                 domain = $2;
                 gsub(/;$/, "", domain);
-                if (port) {
-                    printf "%-30s %-10s %-50s\n", domain, port, FILENAME;
+            }
+            /proxy_pass/ { 
+                proxy = $2;
+                gsub(/;$/, "", proxy);
+                gsub(/^http:\/\//, "", proxy);
+                if (domain && proxy) {
+                    printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
                     domain = "";
-                    port = "";
+                    proxy = "";
                 }
             }' "$file"
-        done | column -t
-
+        done
+        
         return 0
     fi
 
