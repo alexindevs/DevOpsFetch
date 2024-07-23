@@ -115,39 +115,47 @@ log_nginx_information() {
 user_details() {
     local username=$1
 
+    is_regular_user() {
+        local uid=$(id -u "$1" 2>/dev/null)
+        [[ $uid -ge 1000 ]] 2>/dev/null
+    }
+
     if [ -z "$username" ]; then
         echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
 
         # List all users from /etc/passwd
-        local users=$(cut -d: -f1 /etc/passwd)
+        local users=$(cut -d: -f1,3 /etc/passwd)
 
-        for user in $users; do
-            # Get user details from /etc/passwd
-            local user_info=$(grep "^$user:" /etc/passwd)
-            local user_home=$(echo "$user_info" | cut -d: -f6)
-            local user_shell=$(echo "$user_info" | cut -d: -f7)
+        while IFS=: read -r user uid; do
+            if is_regular_user "$user"; then
+                # Get user details from /etc/passwd
+                local user_info=$(grep "^$user:" /etc/passwd)
+                local user_home=$(echo "$user_info" | cut -d: -f6)
+                local user_shell=$(echo "$user_info" | cut -d: -f7)
 
-            # Get last login time
-            local last_login=$(last -F | grep "^$user " | head -1 | awk '{print $5, $6, $7, $8}')
+                # Get last login time
+                local last_login=$(last -F | grep "^$user " | head -1 | awk '{print $5, $6, $7, $8}')
 
-            if [ -z "$last_login" ]; then
-                last_login="Never logged in"
-                session_uptime="N/A"
-            else
-                # Get the session uptime
-                session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
-                if [ "$session_uptime" = "-" ]; then
-                    session_uptime="Still logged in"
+                if [ -z "$last_login" ]; then
+                    last_login="Never logged in"
+                    session_uptime="N/A"
+                else
+                    # Get the session uptime
+                    session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
+                    if [ "$session_uptime" = "-" ]; then
+                        session_uptime="Still logged in"
+                    fi
                 fi
-            fi
 
-            printf "%-15s %-30s %-24s %-25s %-18s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
-        done
+                printf "%-15s %-30s %-24s %-25s %-18s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
+            fi
+        done <<< "$users"
     else
         if ! id "$username" &> /dev/null; then
             echo "User $username does not exist."
             return 1
         fi
+
 
         echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
 
