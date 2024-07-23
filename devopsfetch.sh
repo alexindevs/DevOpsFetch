@@ -31,7 +31,6 @@ log_nginx_information() {
     local parameter=$1
     local files
 
-
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
@@ -40,7 +39,7 @@ log_nginx_information() {
     if [ -z "$parameter" ]; then
         echo "Server Domain                           Proxy                Configuration File"
         echo "------------                           -----                -----------------"
-        
+
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk '
             BEGIN { domain = ""; proxy = "" }
@@ -59,64 +58,53 @@ log_nginx_information() {
                 }
             }' "$file"
         done
-        
+
         return 0
     fi
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
         echo "Searching for Nginx configuration with port $parameter..."
-        files=$(grep -l -E "listen\s*$parameter" /etc/nginx/sites-enabled/*)
-
-        if [ -z "$files" ]; then
-            echo "No Nginx configuration found for port $parameter."
-        else
-            for file in $files; do
-                echo ""
-                echo "Configuration file: $file"
-                printf "%-20s %-50s\n" "SETTING" "VALUE"
-                printf "%-20s %-50s\n" "-------" "-----"
-                grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-                /listen/ { printf "%-20s %-50s\n", "Port:", $2 }
-                /root/ { printf "%-20s %-50s\n", "Root Directory:", $2 }
-                /index/ { printf "%-20s %-50s\n", "Index Files:", $2 }
-                /server_name/ { printf "%-20s %-50s\n", "Server Name:", $2 }
-                /ssl_certificate / { printf "%-20s %-50s\n", "SSL Certificate:", $2 }
-                /ssl_certificate_key/ { printf "%-20s %-50s\n", "SSL Certificate Key:", $2 }
-                /error_log/ { printf "%-20s %-50s\n", "Error Log:", $2 }
-                /access_log/ { printf "%-20s %-50s\n", "Access Log:", $2 }
-                /location/ { 
-                    location = $0;
-                    gsub(/[{};]/, "", location);
-                    printf "%-20s %-50s\n", "Location Block:", location;
-                }' | column -t
-            done
-        fi
+        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
+            awk -v search_port="$parameter" '
+            BEGIN { domain = ""; proxy = "" }
+            /server_name/ { 
+                domain = $2;
+                gsub(/;$/, "", domain);
+            }
+            /listen/ {
+                if ($2 ~ search_port) {
+                    proxy = "http://localhost:" $2;
+                    gsub(/;$/, "", proxy);
+                    if (domain && proxy) {
+                        printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
+                        domain = "";
+                        proxy = "";
+                    }
+                }
+            }' "$file"
+        done
     else
         echo "Searching for Nginx configuration with domain $parameter..."
-        local file
-        file=$(grep -l "server_name\s*$parameter;" /etc/nginx/sites-enabled/*)
-
-        if [ -z "$file" ]; then
-            echo "No Nginx configuration found for domain $parameter."
-        else
-            echo "Configuration file: $file"
-            printf "%-20s %-50s\n" "SETTING" "VALUE"
-            printf "%-20s %-50s\n" "-------" "-----"
-            grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-            /listen/ { printf "%-20s %-50s\n", "Port:", $2 }
-            /root/ { printf "%-20s %-50s\n", "Root Directory:", $2 }
-            /index/ { printf "%-20s %-50s\n", "Index Files:", $2 }
-            /server_name/ { printf "%-20s %-50s\n", "Server Name:", $2 }
-            /ssl_certificate / { printf "%-20s %-50s\n", "SSL Certificate:", $2 }
-            /ssl_certificate_key/ { printf "%-20s %-50s\n", "SSL Certificate Key:", $2 }
-            /error_log/ { printf "%-20s %-50s\n", "Error Log:", $2 }
-            /access_log/ { printf "%-20s %-50s\n", "Access Log:", $2 }
-            /location/ { 
-                location = $0;
-                gsub(/[{};]/, "", location);
-                printf "%-20s %-50s\n", "Location Block:", location;
-            }' | column -t
-        fi
+        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
+            awk -v search_domain="$parameter" '
+            BEGIN { domain = ""; proxy = "" }
+            /server_name/ { 
+                if ($2 ~ search_domain) {
+                    domain = $2;
+                    gsub(/;$/, "", domain);
+                }
+            }
+            /proxy_pass/ { 
+                proxy = $2;
+                gsub(/;$/, "", proxy);
+                gsub(/^http:\/\//, "", proxy);
+                if (domain && proxy) {
+                    printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
+                    domain = "";
+                    proxy = "";
+                }
+            }' "$file"
+        done
     fi
 }
 
