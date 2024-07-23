@@ -168,6 +168,11 @@ devopsfetch --continuous
 
 This utility script is designed to deploy changes made locally to the devopsfetch and devopsfetch_monitor executables and restart the monitoring service. By copying the updated scripts to the appropriate directories, making them executable, and restarting the devopsfetch_monitor service, it ensures that the latest updates are applied efficiently. To deploy changes, run the following:
 
+```bash
+chmod +x ./deploy_changes.sh
+sudo ./deploy_changes.sh
+```
+
 ## Uninstallation
 
 To uninstall DevOpsFetch, use the provided `uninstall_devopsfetch.sh` script. This script will remove all components installed by DevOpsFetch, including:
@@ -184,11 +189,6 @@ sudo ./uninstall_devopsfetch.sh
 ```
 
 After execution, the system will be reverted to its previous state before DevOpsFetch was installed.
-
-```bash
-chmod +x ./deploy_changes.sh
-sudo ./deploy_changes.sh
-```
 
 ## Logging Mechanism
 
