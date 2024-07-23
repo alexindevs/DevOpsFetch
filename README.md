@@ -181,6 +181,21 @@ cat /home/$USER/devopsfetch.log | less
 
 You can also use the `-t` flag with DevOpsFetch to view logs for a specific time range.
 
+Example of a log snippet:
+
+```plaintext
+2024-07-23 15:45:23 - User Activity - User logged in: alice
+2024-07-23 15:46:02 - Network Activity - Port opened: 8080 - Process: 1234/nginx
+2024-07-23 15:47:15 - Docker Activity - start container 9a8b7c6d5e4f
+2024-07-23 15:48:30 - Nginx Config - alice modify default in /etc/nginx/sites-enabled
+2024-07-23 15:49:45 - User Activity - User switched: alice to root
+2024-07-23 15:50:12 - Network Activity - Port closed: 3000 - Process: 5678/node
+2024-07-23 15:51:20 - Docker Activity - stop container 1a2b3c4d5e6f
+2024-07-23 15:52:05 - User Activity - User logged out: bob
+2024-07-23 15:53:18 - Nginx Config - root create newsite.conf in /etc/nginx/sites-enabled
+2024-07-23 15:54:30 - Network Activity - Port opened: 443 - Process: 9876/apache2
+```
+
 ## System Interaction
 
 DevOpsFetch interacts with various system components:
