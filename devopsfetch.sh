@@ -178,7 +178,6 @@ user_details() {
         fi
 
         echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
-        echo "----------------------------------------------------------------------------------------------------------"
 
         # Get user details from /etc/passwd
         local user_info=$(grep "^$username:" /etc/passwd)
@@ -225,9 +224,7 @@ display_activities() {
     end_seconds=$(date -d "$end_date" +%s)
 
     echo "Activities from $start_date to $end_date:"
-    echo "----------------------------------------"
     printf "%-20s %-20s %-50s\n" "Date" "Category" "Activity"
-    echo "-----------------------------------------------------------------------------------------------------------"
 
     while IFS= read -r line; do
         # Extract the timestamp from the log entry
@@ -236,8 +233,8 @@ display_activities() {
 
         # Check if the log entry is within the specified time range
         if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
-            category=$(echo "$line" | cut -d' ' -f4)
-            activity=$(echo "$line" | cut -d'-' -f4- | sed 's/^[[:space:]]*//')
+            category=$(echo "$line" | cut -d' ' -f4-5)
+            activity=$(echo "$line" | cut -d'-' -f7- | sed 's/^[[:space:]]*//')
             printf "%-20s %-20s %-50s\n" "$log_date" "$category" "$activity"
         fi
     done < "$log_file"
