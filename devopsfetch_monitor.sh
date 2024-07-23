@@ -27,7 +27,7 @@ monitor_user_activities() {
 monitor_network_activities() {
     while true; do
         netstat -tulpn | grep LISTEN | awk '{print $4,$7,$NF}' | sort > /tmp/current_ports
-        diff /tmp/previous_ports /tmp/current_ports | while read line; do
+        diff /tmp/previous_ports /tmp/current_ports 2>/dev/null | while read line; do
             if [[ $line == "<"* ]]; then
                 port=$(echo $line | awk '{print $2}')
                 process=$(echo $line | awk '{print $3}')
@@ -45,7 +45,7 @@ monitor_network_activities() {
 
 # Monitor changes in nginx conf
 monitor_nginx_conf() {
-    inotifywait -m -r -e modify,create,delete,move /etc/nginx/sites-enabled | while read path action file; do
+    inotifywait -m -r -e modify,create,delete,move /etc/nginx/sites-enabled 2>/dev/null | while read path action file; do
         user=$(who | awk '{print $1}' | sort -u | head -n1)
         log_message "Nginx Config" "$user $action $file in $path"
     done &
