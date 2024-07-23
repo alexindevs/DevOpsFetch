@@ -32,28 +32,32 @@ log_nginx_information() {
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
-    fi
+    }
 
     if [ -z "$parameter" ]; then
-      echo "Nginx Domains and Ports:"
-      # Resolve symbolic links and search for domain and port info
-      find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-        echo "Configuration file: $file"
-        grep -E "server_name|listen" "$file" | grep -v '^\s*#' | awk '
+        echo "Nginx Domains, Ports, and Configuration Files:"
+        printf "%-30s %-10s %-50s\n" "DOMAIN" "PORT" "CONFIG FILE"
+        printf "%-30s %-10s %-50s\n" "------" "----" "-----------"
+        
+        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
+            awk '
+            BEGIN { domain = ""; port = "" }
             /listen/ { 
-                port = $2 
+                port = $2;
+                gsub(/;$/, "", port);
             } 
             /server_name/ { 
-                domain = $2 
-                gsub(/;$/, "", domain) 
+                domain = $2;
+                gsub(/;$/, "", domain);
                 if (port) {
-                    printf "domain: %s; port: %s;\n", domain, port
-                    port = ""
+                    printf "%-30s %-10s %-50s\n", domain, port, FILENAME;
+                    domain = "";
+                    port = "";
                 }
-            }'
-      done
+            }' "$file"
+        done | column -t
 
-      return 0
+        return 0
     fi
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
@@ -66,36 +70,22 @@ log_nginx_information() {
             for file in $files; do
                 echo ""
                 echo "Configuration file: $file"
+                printf "%-20s %-50s\n" "SETTING" "VALUE"
+                printf "%-20s %-50s\n" "-------" "-----"
                 grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-                /listen/ { 
-                    printf "Port: %s\n", $2 
-                }
-                /root/ { 
-                    printf "Root Directory: %s\n", $2 
-                }
-                /index/ { 
-                    printf "Index Files: %s\n", $2 
-                }
-                /server_name/ { 
-                    printf "Server Name: %s\n", $2 
-                }
-                /ssl_certificate / { 
-                    printf "SSL Certificate: %s\n", $2 
-                }
-                /ssl_certificate_key/ { 
-                    printf "SSL Certificate Key: %s\n", $2 
-                }
-                /error_log/ { 
-                    printf "Error Log: %s\n", $2 
-                }
-                /access_log/ { 
-                    printf "Access Log: %s\n", $2 
-                }
+                /listen/ { printf "%-20s %-50s\n", "Port:", $2 }
+                /root/ { printf "%-20s %-50s\n", "Root Directory:", $2 }
+                /index/ { printf "%-20s %-50s\n", "Index Files:", $2 }
+                /server_name/ { printf "%-20s %-50s\n", "Server Name:", $2 }
+                /ssl_certificate / { printf "%-20s %-50s\n", "SSL Certificate:", $2 }
+                /ssl_certificate_key/ { printf "%-20s %-50s\n", "SSL Certificate Key:", $2 }
+                /error_log/ { printf "%-20s %-50s\n", "Error Log:", $2 }
+                /access_log/ { printf "%-20s %-50s\n", "Access Log:", $2 }
                 /location/ { 
-                    location = $0
-                    gsub(/[{};]/, "", location)
-                    printf "Location Block: %s\n", location
-                }'
+                    location = $0;
+                    gsub(/[{};]/, "", location);
+                    printf "%-20s %-50s\n", "Location Block:", location;
+                }' | column -t
             done
         fi
     else
@@ -106,36 +96,22 @@ log_nginx_information() {
             echo "No Nginx configuration found for domain $parameter."
         else
             echo "Configuration file: $file"
+            printf "%-20s %-50s\n" "SETTING" "VALUE"
+            printf "%-20s %-50s\n" "-------" "-----"
             grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-        /listen/ { 
-            printf "Port: %s\n", $2 
-        }
-        /root/ { 
-            printf "Root Directory: %s\n", $2 
-        }
-        /index/ { 
-            printf "Index Files: %s\n", $2 
-        }
-        /server_name/ { 
-            printf "Server Name: %s\n", $2 
-        }
-        /ssl_certificate / { 
-            printf "SSL Certificate: %s\n", $2 
-        }
-        /ssl_certificate_key/ { 
-            printf "SSL Certificate Key: %s\n", $2 
-        }
-        /error_log/ { 
-            printf "Error Log: %s\n", $2 
-        }
-        /access_log/ { 
-            printf "Access Log: %s\n", $2 
-        }
-        /location/ { 
-            location = $0
-            gsub(/[{};]/, "", location)
-            printf "Location Block: %s\n", location
-        }'
+            /listen/ { printf "%-20s %-50s\n", "Port:", $2 }
+            /root/ { printf "%-20s %-50s\n", "Root Directory:", $2 }
+            /index/ { printf "%-20s %-50s\n", "Index Files:", $2 }
+            /server_name/ { printf "%-20s %-50s\n", "Server Name:", $2 }
+            /ssl_certificate / { printf "%-20s %-50s\n", "SSL Certificate:", $2 }
+            /ssl_certificate_key/ { printf "%-20s %-50s\n", "SSL Certificate Key:", $2 }
+            /error_log/ { printf "%-20s %-50s\n", "Error Log:", $2 }
+            /access_log/ { printf "%-20s %-50s\n", "Access Log:", $2 }
+            /location/ { 
+                location = $0;
+                gsub(/[{};]/, "", location);
+                printf "%-20s %-50s\n", "Location Block:", location;
+            }' | column -t
         fi
     fi
 }
@@ -201,8 +177,6 @@ user_details() {
         printf "%-15s %-30s %-24s %-25s %-18s\n" "$username" "$user_home" "$user_shell" "$last_login" "$session_uptime"
     fi
 }
-
-
 
 display_activities() {
     local start_date="$1"

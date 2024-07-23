@@ -24,6 +24,10 @@ To install DevOpsFetch, follow these steps:
 
 1. Clone the repository or download the scripts (`install.sh`, `devopsfetch.sh`, and `devopsfetch_monitor.sh`) and store them in a folder.
 
+   ```bash
+   git clone https://github.com/alexindevs/DevOpsFetch.git
+   ```
+
 2. Make the installation script executable:
 
    ```bash
