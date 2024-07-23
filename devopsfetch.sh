@@ -215,7 +215,7 @@ display_activities() {
         log_seconds=$(date -d "$log_date" +%s)
 
         # Check if the log entry is within the specified time range
-        if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
+        if [ $log_seconds -gt $start_seconds ] && [ $log_seconds -lt $end_seconds ]; then
             echo "$line"
         fi
     done < "$log_file"
