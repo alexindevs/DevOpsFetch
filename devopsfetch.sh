@@ -36,8 +36,8 @@ log_nginx_information() {
     fi
 
     if [ -z "$parameter" ]; then
-        echo "Server Domain                           Port    Proxy                Configuration File"
-        echo "-------------                           ----    -----                ------------------"
+        echo "Server Domain                  Port             Proxy                Configuration File"
+        echo "-------------                  ----             -----                ------------------"
 
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk '
