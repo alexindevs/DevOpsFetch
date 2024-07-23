@@ -30,31 +30,35 @@ get_docker_info() {
 log_nginx_information() {
     local parameter=$1
     local files
-
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
     fi
 
     if [ -z "$parameter" ]; then
-        echo "Server Domain                           Proxy                Configuration File"
-        echo "------------                           -----                -----------------"
+        echo "Server Domain                           Port    Proxy                Configuration File"
+        echo "-------------                           ----    -----                ------------------"
 
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk '
-            BEGIN { domain = ""; proxy = "" }
-            /server_name/ { 
+            BEGIN { domain = ""; proxy = ""; port = "" }
+            /server_name/ {
                 domain = $2;
                 gsub(/;$/, "", domain);
             }
-            /proxy_pass/ { 
+            /listen/ {
+                port = $2;
+                gsub(/;$/, "", port);
+            }
+            /proxy_pass/ {
                 proxy = $2;
                 gsub(/;$/, "", proxy);
                 gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy) {
-                    printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
+                if (domain && proxy && port) {
+                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
                     domain = "";
                     proxy = "";
+                    port = "";
                 }
             }' "$file"
         done
@@ -63,49 +67,56 @@ log_nginx_information() {
     fi
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
-        cho "Server Domain                           Proxy                Configuration File"
-        echo "------------                           -----                ------------------"
+        echo "Server Domain                           Port    Proxy                Configuration File"
+        echo "-------------                           ----    -----                ------------------"
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk -v search_port="$parameter" '
-            BEGIN { domain = ""; proxy = "" }
-            /server_name/ { 
+            BEGIN { domain = ""; proxy = ""; port = "" }
+            /server_name/ {
                 domain = $2;
                 gsub(/;$/, "", domain);
             }
             /listen/ {
                 if ($2 ~ search_port) {
-                    proxy = "http://localhost:" $2;
-                    gsub(/;$/, "", proxy);
-                    if (domain && proxy) {
-                        printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
+                    port = $2;
+                    gsub(/;$/, "", port);
+                    proxy = "http://localhost:" port;
+                    if (domain && proxy && port) {
+                        printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
                         domain = "";
                         proxy = "";
+                        port = "";
                     }
                 }
             }' "$file"
         done
     else
         echo "Searching for Nginx configuration with domain $parameter..."
-        echo "Server Domain                           Proxy                Configuration File"
-        echo "-------------                           -----                -----------------"
+        echo "Server Domain                           Port    Proxy                Configuration File"
+        echo "-------------                           ----    -----                -----------------"
         
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk -v search_domain="$parameter" '
-            BEGIN { domain = ""; proxy = "" }
-            /server_name/ { 
+            BEGIN { domain = ""; proxy = ""; port = "" }
+            /server_name/ {
                 if ($2 ~ search_domain) {
                     domain = $2;
                     gsub(/;$/, "", domain);
                 }
             }
-            /proxy_pass/ { 
+            /listen/ {
+                port = $2;
+                gsub(/;$/, "", port);
+            }
+            /proxy_pass/ {
                 proxy = $2;
                 gsub(/;$/, "", proxy);
                 gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy) {
-                    printf "%-35s %-20s %s\n", domain, proxy, FILENAME;
+                if (domain && proxy && port) {
+                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
                     domain = "";
                     proxy = "";
+                    port = "";
                 }
             }' "$file"
         done
