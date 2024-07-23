@@ -15,6 +15,7 @@ DevOpsFetch is a comprehensive system monitoring and information retrieval tool 
     - [User Information](#user-information)
     - [Activity Log](#activity-log)
     - [Continuous Monitoring](#continuous-monitoring)
+    - [Deploying local changes](#deploying-local-changes)
   - [Logging Mechanism](#logging-mechanism)
   - [System Interaction](#system-interaction)
 
@@ -161,6 +162,10 @@ To start the DevOpsFetch monitor if it's not running:
 ```bash
 devopsfetch --continuous
 ```
+
+### Deploying local changes
+
+This utility script is designed to deploy changes made locally to the devopsfetch and devopsfetch_monitor executables and restart the monitoring service. By copying the updated scripts to the appropriate directories, making them executable, and restarting the devopsfetch_monitor service, it ensures that the latest updates are applied efficiently.
 
 ## Logging Mechanism
 
