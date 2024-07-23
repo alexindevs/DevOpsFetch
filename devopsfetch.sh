@@ -144,7 +144,7 @@ user_details() {
     local username=$1
 
     if [ -z "$username" ]; then
-        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\t\tSESSION UPTIME"
+        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
         echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
         # List all users from /etc/passwd
