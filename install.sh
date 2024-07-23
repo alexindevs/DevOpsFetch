@@ -17,7 +17,9 @@ touch "$LOGFILE"
 chmod 644 "$LOGFILE"
 
 apt-get update
-apt-get install -y lsof docker.io nginx inotify-tools net-tools systemd
+apt-get install -y lsof docker.io nginx inotify-tools net-tools systemd cron
+sudo systemctl start cron
+sudo systemctl enable cron
 
 cp devopsfetch.sh "$DEVOPSFETCH_SCRIPT"
 chmod +x "$DEVOPSFETCH_SCRIPT"
@@ -34,7 +36,7 @@ chmod +x "$MONITOR_SCRIPT"
 cp log_rotation.sh "$LOG_ROTATION_SCRIPT"
 chmod +x "$LOG_ROTATION_SCRIPT"
 
-(crontab -l 2>/dev/null; echo "0 0 * * * $LOG_ROTATION_SCRIPT") | crontab -
+(crontab -l 2>/dev/null || echo "") | grep -v "$LOG_ROTATION_SCRIPT" | (cat; echo "0 0 * * * $LOG_ROTATION_SCRIPT") | sudo crontab -
 
 cat << EOF > "$SERVICE_FILE"
 [Unit]
