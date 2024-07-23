@@ -234,7 +234,7 @@ display_activities() {
         # Check if the log entry is within the specified time range
         if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
             category=$(echo "$line" | cut -d' ' -f4-5)
-            activity=$(echo "$line" | cut -d'-' -f7- | sed 's/^[[:space:]]*//')
+            activity=$(echo "$line" | cut -d' ' -f7- | sed 's/^[[:space:]]*//')
             printf "%-20s %-20s %-50s\n" "$log_date" "$category" "$activity"
         fi
     done < "$log_file"
