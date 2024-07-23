@@ -144,8 +144,8 @@ user_details() {
     local username=$1
 
     if [ -z "$username" ]; then
-        echo "Listing all users and their details:"
-        echo -e "Username\tHome Directory\t\t\tShell\t\t\tLast Login\t\t\tSession Uptime"
+echo -e "USERNAME\t\tHOME DIRECTORY\t\t\t\t\tSHELL\t\t\t\tLAST LOGIN\t\t\tSESSION UPTIME"
+        echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
         # List all users from /etc/passwd
         local users=$(cut -d: -f1 /etc/passwd)
@@ -170,7 +170,7 @@ user_details() {
                 fi
             fi
 
-            printf "%-15s %-40s %-20s %-30s %-20s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
+            printf "%-15s %-40s %-30s %-25s %-20s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
         done
     else
         if ! id "$username" &> /dev/null; then
