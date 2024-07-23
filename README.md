@@ -165,7 +165,12 @@ devopsfetch --continuous
 
 ### Deploying local changes
 
-This utility script is designed to deploy changes made locally to the devopsfetch and devopsfetch_monitor executables and restart the monitoring service. By copying the updated scripts to the appropriate directories, making them executable, and restarting the devopsfetch_monitor service, it ensures that the latest updates are applied efficiently.
+This utility script is designed to deploy changes made locally to the devopsfetch and devopsfetch_monitor executables and restart the monitoring service. By copying the updated scripts to the appropriate directories, making them executable, and restarting the devopsfetch_monitor service, it ensures that the latest updates are applied efficiently. To deploy changes, run the following:
+
+```bash
+chmod +x ./deploy_changes.sh
+sudo ./deploy_changes.sh
+```
 
 ## Logging Mechanism
 
