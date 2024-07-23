@@ -1,6 +1,6 @@
-# This script applies changes to the devopsfetch and devopsfetch_monitor executable, makes them executable, and restarts the devopsfetch_monitor service. 
-
 #!/bin/bash
+
+# This script applies changes to the devopsfetch and devopsfetch_monitor executable, makes them executable, and restarts the devopsfetch_monitor service. 
 
 # Apply changes to devopsfetch executable
 cp devopsfetch.sh /usr/local/bin/devopsfetch

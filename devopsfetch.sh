@@ -26,13 +26,16 @@ get_docker_info() {
   fi
 }
 
+# This script applies changes to the devopsfetch and devopsfetch_monitor executable, makes them executable, and restarts the devopsfetch_monitor service. 
 log_nginx_information() {
     local parameter=$1
+    local files
+
 
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
-    }
+    fi
 
     if [ -z "$parameter" ]; then
         echo "Nginx Domains, Ports, and Configuration Files:"
@@ -62,7 +65,7 @@ log_nginx_information() {
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
         echo "Searching for Nginx configuration with port $parameter..."
-        local files=$(grep -l -E "listen\s*$parameter" /etc/nginx/sites-enabled/*)
+        files=$(grep -l -E "listen\s*$parameter" /etc/nginx/sites-enabled/*)
 
         if [ -z "$files" ]; then
             echo "No Nginx configuration found for port $parameter."
@@ -90,7 +93,8 @@ log_nginx_information() {
         fi
     else
         echo "Searching for Nginx configuration with domain $parameter..."
-        local file=$(grep -l "server_name\s*$parameter;" /etc/nginx/sites-enabled/*)
+        local file
+        file=$(grep -l "server_name\s*$parameter;" /etc/nginx/sites-enabled/*)
 
         if [ -z "$file" ]; then
             echo "No Nginx configuration found for domain $parameter."
