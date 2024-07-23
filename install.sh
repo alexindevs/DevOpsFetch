@@ -11,6 +11,7 @@ LOGFILE="/var/log/devopsfetch.log"
 DEVOPSFETCH_SCRIPT="/usr/local/bin/devopsfetch"
 MONITOR_SCRIPT="/usr/local/bin/devopsfetch_monitor"
 SERVICE_FILE="/etc/systemd/system/devopsfetch_monitor.service"
+LOG_ROTATION_SCRIPT="/usr/local/bin/devopsfetch_log_rotation"
 
 touch "$LOGFILE"
 chmod 644 "$LOGFILE"
@@ -29,6 +30,11 @@ chmod 0440 /etc/sudoers.d/devopsfetch_systemd
 
 cp devopsfetch_monitor.sh "$MONITOR_SCRIPT"
 chmod +x "$MONITOR_SCRIPT"
+
+cp log_rotation.sh "$LOG_ROTATION_SCRIPT"
+chmod +x "$LOG_ROTATION_SCRIPT"
+
+(crontab -l 2>/dev/null; echo "0 0 * * * $LOG_ROTATION_SCRIPT") | crontab -
 
 cat << EOF > "$SERVICE_FILE"
 [Unit]
