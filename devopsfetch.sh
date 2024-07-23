@@ -35,110 +35,158 @@ log_nginx_information() {
     fi
 
     if [ -z "$parameter" ]; then
-      echo "Nginx Domains and Ports:"
-      # Resolve symbolic links and search for domain and port info
-      find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-        echo "Configuration file: $file"
-        grep -E "server_name|listen" "$file" | grep -v '^\s*#' | awk '
-            /listen/ { 
-                port = $2 
-            } 
-            /server_name/ { 
-                domain = $2 
-                gsub(/;$/, "", domain) 
-                if (port) {
-                    printf "domain: %s; port: %s;\n", domain, port
-                    port = ""
-                }
-            }'
-      done
+        echo -e "Nginx Domains and Ports:\n"
+        echo -e "Configuration File\t\tDomain\t\tPort"
+        echo "---------------------------------------------"
+        
+        # Resolve symbolic links and search for domain and port info
+        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
+            domain=""
+            port=""
 
-      return 0
+            grep -E "server_name|listen" "$file" | grep -v '^\s*#' | awk '
+                /listen/ { 
+                    port = $2 
+                } 
+                /server_name/ { 
+                    domain = $2 
+                    gsub(/;$/, "", domain) 
+                    if (port) {
+                        printf "%s\t%s\t%s\n", "'"$file"'", domain, port
+                        port = ""
+                    }
+                }'
+        done
+        return 0
     fi
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
-        echo "Searching for Nginx configuration with port $parameter..."
+        echo -e "Searching for Nginx configuration with port $parameter...\n"
+        echo -e "Configuration File\t\tPort\tRoot Directory\tIndex Files\tServer Name\tSSL Certificate\tSSL Certificate Key\tError Log\tAccess Log\tLocation Block"
+        echo "------------------------------------------------------------------------------------------------------------"
+
         local files=$(grep -l -E "listen\s*$parameter" /etc/nginx/sites-enabled/*)
 
         if [ -z "$files" ]; then
             echo "No Nginx configuration found for port $parameter."
         else
             for file in $files; do
-                echo ""
-                echo "Configuration file: $file"
                 grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-                /listen/ { 
-                    printf "Port: %s\n", $2 
-                }
-                /root/ { 
-                    printf "Root Directory: %s\n", $2 
-                }
-                /index/ { 
-                    printf "Index Files: %s\n", $2 
-                }
-                /server_name/ { 
-                    printf "Server Name: %s\n", $2 
-                }
-                /ssl_certificate / { 
-                    printf "SSL Certificate: %s\n", $2 
-                }
-                /ssl_certificate_key/ { 
-                    printf "SSL Certificate Key: %s\n", $2 
-                }
-                /error_log/ { 
-                    printf "Error Log: %s\n", $2 
-                }
-                /access_log/ { 
-                    printf "Access Log: %s\n", $2 
-                }
-                /location/ { 
-                    location = $0
-                    gsub(/[{};]/, "", location)
-                    printf "Location Block: %s\n", location
-                }'
+                    BEGIN {FS=" ";}
+                    /listen/ { 
+                        port = $2 
+                    }
+                    /root/ { 
+                        root = $2 
+                        gsub(/;$/, "", root)
+                    }
+                    /index/ { 
+                        index = $2 
+                        gsub(/;$/, "", index)
+                    }
+                    /server_name/ { 
+                        server_name = $2 
+                        gsub(/;$/, "", server_name)
+                    }
+                    /ssl_certificate/ { 
+                        ssl_certificate = $2 
+                        gsub(/;$/, "", ssl_certificate)
+                    }
+                    /ssl_certificate_key/ { 
+                        ssl_certificate_key = $2 
+                        gsub(/;$/, "", ssl_certificate_key)
+                    }
+                    /error_log/ { 
+                        error_log = $2 
+                        gsub(/;$/, "", error_log)
+                    }
+                    /access_log/ { 
+                        access_log = $2 
+                        gsub(/;$/, "", access_log)
+                    }
+                    /location/ { 
+                        location = $0
+                        gsub(/[{};]/, "", location)
+                    }
+                    END {
+                        printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", 
+                            "'"$file"'", 
+                            port, 
+                            root, 
+                            index, 
+                            server_name, 
+                            ssl_certificate, 
+                            ssl_certificate_key, 
+                            error_log, 
+                            access_log, 
+                            location
+                    }'
             done
         fi
     else
-        echo "Searching for Nginx configuration with domain $parameter..."
+        echo -e "Searching for Nginx configuration with domain $parameter...\n"
+        echo -e "Configuration File\t\tPort\tRoot Directory\tIndex Files\tServer Name\tSSL Certificate\tSSL Certificate Key\tError Log\tAccess Log\tLocation Block"
+        echo "------------------------------------------------------------------------------------------------------------"
+
         local file=$(grep -l "server_name\s*$parameter;" /etc/nginx/sites-enabled/*)
 
         if [ -z "$file" ]; then
             echo "No Nginx configuration found for domain $parameter."
         else
-            echo "Configuration file: $file"
             grep -E -v '^\s*#' "$file" | grep -E "server_name|listen|root|index|ssl_certificate|ssl_certificate_key|error_log|access_log|location" | awk '
-        /listen/ { 
-            printf "Port: %s\n", $2 
-        }
-        /root/ { 
-            printf "Root Directory: %s\n", $2 
-        }
-        /index/ { 
-            printf "Index Files: %s\n", $2 
-        }
-        /server_name/ { 
-            printf "Server Name: %s\n", $2 
-        }
-        /ssl_certificate / { 
-            printf "SSL Certificate: %s\n", $2 
-        }
-        /ssl_certificate_key/ { 
-            printf "SSL Certificate Key: %s\n", $2 
-        }
-        /error_log/ { 
-            printf "Error Log: %s\n", $2 
-        }
-        /access_log/ { 
-            printf "Access Log: %s\n", $2 
-        }
-        /location/ { 
-            location = $0
-            gsub(/[{};]/, "", location)
-            printf "Location Block: %s\n", location
-        }'
+                BEGIN {FS=" ";}
+                /listen/ { 
+                    port = $2 
+                }
+                /root/ { 
+                    root = $2 
+                    gsub(/;$/, "", root)
+                }
+                /index/ { 
+                    index = $2 
+                    gsub(/;$/, "", index)
+                }
+                /server_name/ { 
+                    server_name = $2 
+                    gsub(/;$/, "", server_name)
+                }
+                /ssl_certificate/ { 
+                    ssl_certificate = $2 
+                    gsub(/;$/, "", ssl_certificate)
+                }
+                /ssl_certificate_key/ { 
+                    ssl_certificate_key = $2 
+                    gsub(/;$/, "", ssl_certificate_key)
+                }
+                /error_log/ { 
+                    error_log = $2 
+                    gsub(/;$/, "", error_log)
+                }
+                /access_log/ { 
+                    access_log = $2 
+                    gsub(/;$/, "", access_log)
+                }
+                /location/ { 
+                    location = $0
+                    gsub(/[{};]/, "", location)
+                }
+                END {
+                    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", 
+                        "'"$file"'", 
+                        port, 
+                        root, 
+                        index, 
+                        server_name, 
+                        ssl_certificate, 
+                        ssl_certificate_key, 
+                        error_log, 
+                        access_log, 
+                        location
+                }'
         fi
     fi
 }
+
 
 user_details() {
     local username=$1
@@ -223,8 +271,7 @@ display_activities() {
     start_seconds=$(date -d "$start_date" +%s)
     end_seconds=$(date -d "$end_date" +%s)
 
-    echo "Activities from $start_date to $end_date:"
-    printf "%-20s %-20s %-50s\n" "Date" "Category" "Activity"
+    printf "%-20s %-20s %-50s\n" "DATE" "CATEGORY" "ACTIVITY"
 
     while IFS= read -r line; do
         # Extract the timestamp from the log entry
