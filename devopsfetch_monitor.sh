@@ -10,21 +10,38 @@ log_message() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') - $category - $message" >> "$LOG_FILE"
 }
 
+is_regular_user() {
+    local user=$1
+    local uid=$(id -u "$user" 2>/dev/null)
+    [[ -n "$uid" && "$uid" -ge 1000 ]]
+}
+
 # Monitor user activities
 monitor_user_activities() {
     tail -fn0 /var/log/auth.log | while read line; do
         if echo "$line" | grep -q "session opened"; then
-            log_message "User Activity" "User logged in: $(echo $line | awk '{print $9}')"
+            user=$(echo $line | awk '{print $9}')
+            if is_regular_user "$user"; then
+                log_message "User Activity" "User logged in: $user"
+            fi
         elif echo "$line" | grep -q "session closed"; then
-            log_message "User Activity" "User logged out: $(echo $line | awk '{print $9}')"
+            user=$(echo $line | awk '{print $9}')
+            if is_regular_user "$user"; then
+                log_message "User Activity" "User logged out: $user"
+            fi
         elif echo "$line" | grep -q "su:"; then
-            log_message "User Activity" "User switched: $(echo $line | awk '{print $11" to "$13}')"
+            from_user=$(echo $line | awk '{print $11}')
+            to_user=$(echo $line | awk '{print $13}')
+            if is_regular_user "$from_user"; then
+                log_message "User Activity" "User switched: $from_user to $to_user"
+            fi
         fi
     done &
 }
 
 # Monitor network activities on ports
 monitor_network_activities() {
+    touch /tmp/previous_ports
     while true; do
         netstat -tulpn | grep LISTEN | awk '{print $4,$7,$NF}' | sort > /tmp/current_ports
         diff /tmp/previous_ports /tmp/current_ports 2>/dev/null | while read line; do
@@ -46,8 +63,10 @@ monitor_network_activities() {
 # Monitor changes in nginx conf
 monitor_nginx_conf() {
     inotifywait -m -r -e modify,create,delete,move /etc/nginx/sites-enabled 2>/dev/null | while read path action file; do
-        user=$(who | awk '{print $1}' | sort -u | head -n1)
-        log_message "Nginx Config" "$user $action $file in $path"
+        if ! echo "$path $action $file" | grep -qE "Setting up watches|Watches established"; then
+            user=$(who | awk '{print $1}' | sort -u | head -n1)
+            log_message "Nginx Config" "$user $action $file in $path"
+        fi
     done &
 }
 
