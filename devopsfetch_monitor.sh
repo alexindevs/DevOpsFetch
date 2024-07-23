@@ -20,19 +20,19 @@ is_regular_user() {
 monitor_user_activities() {
     tail -fn0 /var/log/auth.log | while read line; do
         if echo "$line" | grep -q "session opened"; then
-            user=$(echo $line | awk '{print $9}')
-            if is_regular_user "$user"; then
+            user=$(echo "$line" | awk '{print $11}')
+            if [ "$user" != "root" ] && is_regular_user "$user"; then
                 log_message "User Activity" "User logged in: $user"
             fi
         elif echo "$line" | grep -q "session closed"; then
-            user=$(echo $line | awk '{print $9}')
-            if is_regular_user "$user"; then
+            user=$(echo "$line" | awk '{print $11}')
+            if [ "$user" != "root" ] && is_regular_user "$user"; then
                 log_message "User Activity" "User logged out: $user"
             fi
         elif echo "$line" | grep -q "su:"; then
-            from_user=$(echo $line | awk '{print $11}')
-            to_user=$(echo $line | awk '{print $13}')
-            if is_regular_user "$from_user"; then
+            from_user=$(echo "$line" | awk '{print $11}')
+            to_user=$(echo "$line" | awk '{print $13}')
+            if [ "$from_user" != "root" ] && [ "$to_user" != "root" ] && is_regular_user "$from_user"; then
                 log_message "User Activity" "User switched: $from_user to $to_user"
             fi
         fi
