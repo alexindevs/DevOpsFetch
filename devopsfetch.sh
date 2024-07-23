@@ -63,7 +63,8 @@ log_nginx_information() {
     fi
 
     if [[ $parameter =~ ^[0-9]+$ ]]; then
-        echo "Searching for Nginx configuration with port $parameter..."
+        cho "Server Domain                           Proxy                Configuration File"
+        echo "------------                           -----                ------------------"
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk -v search_port="$parameter" '
             BEGIN { domain = ""; proxy = "" }
@@ -85,6 +86,9 @@ log_nginx_information() {
         done
     else
         echo "Searching for Nginx configuration with domain $parameter..."
+        echo "Server Domain                           Proxy                Configuration File"
+        echo "-------------                           -----                -----------------"
+        
         find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
             awk -v search_domain="$parameter" '
             BEGIN { domain = ""; proxy = "" }
