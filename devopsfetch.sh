@@ -143,21 +143,34 @@ log_nginx_information() {
 user_details() {
     local username=$1
 
-     if [ -z "$username" ]; then
-        echo "Listing all users and their last login times:"
-        
+    if [ -z "$username" ]; then
+        echo "Listing all users and their details:"
+        echo -e "Username\tHome Directory\t\t\tShell\t\t\tLast Login\t\t\tSession Uptime"
+
         # List all users from /etc/passwd
         local users=$(cut -d: -f1 /etc/passwd)
-        
+
         for user in $users; do
+            # Get user details from /etc/passwd
+            local user_info=$(grep "^$user:" /etc/passwd)
+            local user_home=$(echo "$user_info" | cut -d: -f6)
+            local user_shell=$(echo "$user_info" | cut -d: -f7)
+
             # Get last login time
             local last_login=$(last -F | grep "^$user " | head -1 | awk '{print $5, $6, $7, $8}')
-            
+
             if [ -z "$last_login" ]; then
                 last_login="Never logged in"
+                session_uptime="N/A"
+            else
+                # Get the session uptime
+                session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
+                if [ "$session_uptime" = "-" ]; then
+                    session_uptime="Still logged in"
+                fi
             fi
 
-            echo "User: $user, Last Login: $last_login"
+            printf "%-15s %-40s %-20s %-30s %-20s\n" "$user" "$user_home" "$user_shell" "$last_login" "$session_uptime"
         done
     else
         if ! id "$username" &> /dev/null; then
@@ -174,17 +187,26 @@ user_details() {
 
         # Get last login time
         local last_login=$(last -F | grep "^$username " | head -1 | awk '{print $5, $6, $7, $8}')
-        
+
         if [ -z "$last_login" ]; then
             last_login="Never logged in"
+            session_uptime="N/A"
+        else
+            # Get the session uptime
+            session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
+            if [ "$session_uptime" = "-" ]; then
+                session_uptime="Still logged in"
+            fi
         fi
 
         echo "Username: $username"
         echo "Home Directory: $user_home"
         echo "Shell: $user_shell"
         echo "Last Login: $last_login"
+        echo "Session Uptime: $session_uptime"
     fi
 }
+
 
 display_activities() {
     local start_date="$1"
