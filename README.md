@@ -16,6 +16,7 @@ DevOpsFetch is a comprehensive system monitoring and information retrieval tool 
     - [Activity Log](#activity-log)
     - [Continuous Monitoring](#continuous-monitoring)
     - [Deploying local changes](#deploying-local-changes)
+  - [Uninstallation](#uninstallation)
   - [Logging Mechanism](#logging-mechanism)
   - [System Interaction](#system-interaction)
 
@@ -166,6 +167,23 @@ devopsfetch --continuous
 ### Deploying local changes
 
 This utility script is designed to deploy changes made locally to the devopsfetch and devopsfetch_monitor executables and restart the monitoring service. By copying the updated scripts to the appropriate directories, making them executable, and restarting the devopsfetch_monitor service, it ensures that the latest updates are applied efficiently. To deploy changes, run the following:
+
+## Uninstallation
+
+To uninstall DevOpsFetch, use the provided `uninstall_devopsfetch.sh` script. This script will remove all components installed by DevOpsFetch, including:
+
+- The `devopsfetch`, `devopsfetch_log_rotation`, and `devopsfetch_monitor` scripts from `/usr/local/bin/`.
+- The systemd service configuration file.
+- The cron job for log rotation.
+- Relevant sudoers entries.
+
+Before proceeding with uninstallation, the script will prompt for confirmation to ensure you want to remove these components. Run the script as root or with `sudo` to complete the uninstallation process:
+
+```bash
+sudo ./uninstall_devopsfetch.sh
+```
+
+After execution, the system will be reverted to its previous state before DevOpsFetch was installed.
 
 ```bash
 chmod +x ./deploy_changes.sh
