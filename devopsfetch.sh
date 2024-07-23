@@ -189,7 +189,7 @@ user_details() {
 display_activities() {
     local start_date="$1"
     local end_date="$2"
-    local log_file="/home/$USER/devopsfetch.log"
+    local log_file="/var/log/devopsfetch.log"
 
     if [ -z "$start_date" ]; then
         start_date=$(head -n 1 "$log_file" | cut -d' ' -f1,2)
