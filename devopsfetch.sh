@@ -145,7 +145,6 @@ user_details() {
 
     if [ -z "$username" ]; then
         echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
-        echo "---------------------------------------------------------------------------------------------------------------------------------------"
 
         # List all users from /etc/passwd
         local users=$(cut -d: -f1 /etc/passwd)
@@ -178,7 +177,8 @@ user_details() {
             return 1
         fi
 
-        echo "Details for user $username:"
+        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
+        echo "----------------------------------------------------------------------------------------------------------"
 
         # Get user details from /etc/passwd
         local user_info=$(grep "^$username:" /etc/passwd)
@@ -199,13 +199,10 @@ user_details() {
             fi
         fi
 
-        echo "Username: $username"
-        echo "Home Directory: $user_home"
-        echo "Shell: $user_shell"
-        echo "Last Login: $last_login"
-        echo "Session Uptime: $session_uptime"
+        printf "%-15s %-30s %-24s %-25s %-18s\n" "$username" "$user_home" "$user_shell" "$last_login" "$session_uptime"
     fi
 }
+
 
 
 display_activities() {
@@ -214,8 +211,7 @@ display_activities() {
     local log_file="/var/log/devopsfetch.log"
 
     if [ -z "$start_date" ]; then
-        start_date=$(head -n 1 "$log_file" | cut -d' ' -f1,2)
-        start_date=$(date -d "$start_date" +"%Y-%m-%d")
+        start_date=$(head -n 1 "$log_file" | cut -d' ' -f1)
     fi
 
     if [ -z "$end_date" ]; then
@@ -230,6 +226,8 @@ display_activities() {
 
     echo "Activities from $start_date to $end_date:"
     echo "----------------------------------------"
+    printf "%-20s %-20s %-50s\n" "Date" "Category" "Activity"
+    echo "-----------------------------------------------------------------------------------------------------------"
 
     while IFS= read -r line; do
         # Extract the timestamp from the log entry
@@ -237,11 +235,14 @@ display_activities() {
         log_seconds=$(date -d "$log_date" +%s)
 
         # Check if the log entry is within the specified time range
-        if [ $log_seconds -gt $start_seconds ] && [ $log_seconds -lt $end_seconds ]; then
-            echo "$line"
+        if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
+            category=$(echo "$line" | cut -d' ' -f4)
+            activity=$(echo "$line" | cut -d'-' -f4- | sed 's/^[[:space:]]*//')
+            printf "%-20s %-20s %-50s\n" "$log_date" "$category" "$activity"
         fi
     done < "$log_file"
 }
+
 
 format_output() {
   column -t -s $'\t'
