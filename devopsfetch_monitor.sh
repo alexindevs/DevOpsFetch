@@ -19,21 +19,29 @@ is_regular_user() {
 # Monitor user activities
 monitor_user_activities() {
     tail -fn0 /var/log/auth.log | while read line; do
-        if echo "$line" | grep -q "session opened"; then
-            user=$(echo "$line" | awk '{print $11}')
+        if echo "$line" | grep -q "sshd.*Accepted"; then
+            user=$(echo "$line" | awk '{print $(NF-5)}')
+            ip=$(echo "$line" | awk '{print $(NF-3)}')
             if [ "$user" != "root" ] && is_regular_user "$user"; then
-                log_message "User Activity" "User logged in: $user"
+                log_message "User Activity" "User logged in successfully: $user from $ip"
             fi
-        elif echo "$line" | grep -q "session closed"; then
-            user=$(echo "$line" | awk '{print $11}')
+        elif echo "$line" | grep -q "sshd.*Failed password"; then
+            user=$(echo "$line" | awk '{print $(NF-5)}')
+            ip=$(echo "$line" | awk '{print $(NF-3)}')
             if [ "$user" != "root" ] && is_regular_user "$user"; then
-                log_message "User Activity" "User logged out: $user"
+                log_message "User Activity" "Failed login attempt: $user from $ip"
             fi
-        elif echo "$line" | grep -q "su:"; then
-            from_user=$(echo "$line" | awk '{print $11}')
-            to_user=$(echo "$line" | awk '{print $13}')
-            if [ "$from_user" != "root" ] && [ "$to_user" != "root" ] && is_regular_user "$from_user"; then
-                log_message "User Activity" "User switched: $from_user to $to_user"
+        elif echo "$line" | grep -q "sshd.*Connection closed"; then
+            user=$(echo "$line" | awk '{print $9}')
+            ip=$(echo "$line" | awk '{print $11}')
+            if [ "$user" != "root" ] && is_regular_user "$user"; then
+                log_message "User Activity" "User disconnected: $user from $ip"
+            fi
+        elif echo "$line" | grep -q "sudo:.*COMMAND="; then
+            user=$(echo "$line" | awk -F': ' '{print $2}' | awk '{print $1}')
+            command=$(echo "$line" | awk -F'COMMAND=' '{print $2}')
+            if [ "$user" != "root" ] && is_regular_user "$user"; then
+                log_message "User Activity" "Sudo command executed by $user: $command"
             fi
         fi
     done &
