@@ -54,33 +54,42 @@ log_nginx_information() {
         local search_type=$3
 
         awk -v search="$search_param" -v type="$search_type" '
-        BEGIN { domain = ""; proxy = ""; port = "" }
-        /server_name/ {
-            domain = $2;
-            gsub(/;$/, "", domain);
+        BEGIN { domain = ""; proxy = ""; port = ""; in_server = 0 }
+        /server[[:space:]]*\{/ { in_server = 1; domain = ""; proxy = ""; port = "" }
+        /\}/ { if (in_server) { print_server(); in_server = 0 } }
+        /server_name/ && in_server {
+            for (i=2; i<=NF; i++) {
+                gsub(/;/, "", $i)
+                if (domain == "") domain = $i
+                else domain = domain " " $i
+            }
         }
-        /listen/ {
-            port = $2;
-            gsub(/;$/, "", port);
+        /listen/ && in_server {
+            port = $2
+            gsub(/;/, "", port)
         }
-        /proxy_pass/ {
-            proxy = $2;
-            gsub(/;$/, "", proxy);
-            gsub(/^http:\/\//, "", proxy);
+        /proxy_pass/ && in_server {
+            proxy = $2
+            gsub(/;/, "", proxy)
+            gsub(/^http:\/\//, "", proxy)
         }
-        {
+        function print_server() {
             if (domain && port && (type == "all" || 
                 (type == "domain" && domain ~ search) || 
                 (type == "port" && port ~ search))) {
-                if (!proxy) proxy = "N/A";
-                printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                domain = ""; proxy = ""; port = "";
+                if (!proxy) proxy = "N/A"
+                split(domain, domains, " ")
+                for (d in domains) {
+                    printf "%-35s %-7s %-20s %s\n", domains[d], port, proxy, FILENAME
+                }
             }
-        }' "$file"
+        }
+        END { if (in_server) print_server() }
+        ' "$file"
     }
 
     # Get all Nginx configuration files
-    local config_files=$(find /etc/nginx -type f -name "*.conf" -o -name "*.conf")
+    local config_files=$(find /etc/nginx -type f \( -name "*.conf" -o -name "*.conf" \))
 
     echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
 
@@ -101,7 +110,6 @@ log_nginx_information() {
         done
     fi
 }
-
 # completed
 user_details() {
     local username=$1
