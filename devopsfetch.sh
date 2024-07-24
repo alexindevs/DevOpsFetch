@@ -192,10 +192,11 @@ user_details() {
 display_activities() {
     local start_date="$1"
     local end_date="$2"
-    local log_file="/var/log/devopsfetch.log"
+    local log_dir="/var/log"
+    local current_log="$log_dir/devopsfetch.log"
 
     if [ -z "$start_date" ]; then
-        start_date=$(head -n 1 "$log_file" | cut -d' ' -f1)
+        start_date=$(ls "$log_dir/devopsfetch-"*.log | sort | head -n 1 | sed 's/.*devopsfetch-\(.*\)\.log/\1/')
     fi
 
     if [ -z "$end_date" ]; then
@@ -210,18 +211,30 @@ display_activities() {
 
     printf "%-20s %-20s %-50s\n" "DATE" "CATEGORY" "ACTIVITY"
 
-    while IFS= read -r line; do
-        # Extract the timestamp from the log entry
-        log_date=$(echo "$line" | cut -d' ' -f1,2)
-        log_seconds=$(date -d "$log_date" +%s)
+    # Function to process a single log file
+    process_log_file() {
+        local file="$1"
+        while IFS= read -r line; do
+            log_date=$(echo "$line" | cut -d' ' -f1,2)
+            log_seconds=$(date -d "$log_date" +%s)
 
-        # Check if the log entry is within the specified time range
-        if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
-            category=$(echo "$line" | cut -d' ' -f4-5)
-            activity=$(echo "$line" | cut -d' ' -f7- | sed 's/^[[:space:]]*//')
-            printf "%-20s %-20s %-50s\n" "$log_date" "$category" "$activity"
-        fi
-    done < "$log_file"
+            if [ $log_seconds -ge $start_seconds ] && [ $log_seconds -le $end_seconds ]; then
+                category=$(echo "$line" | cut -d' ' -f4-5)
+                activity=$(echo "$line" | cut -d' ' -f7- | sed 's/^[[:space:]]*//')
+                printf "%-20s %-20s %-50s\n" "$log_date" "$category" "$activity"
+            fi
+        done < "$file"
+    }
+
+    # Process rotated log files
+    for log_file in $(ls "$log_dir"/devopsfetch-*.log | sort -r); do
+        process_log_file "$log_file"
+    done
+
+    # Process the current log file
+    if [ -f "$current_log" ]; then
+        process_log_file "$current_log"
+    fi
 }
 
 
