@@ -22,7 +22,7 @@ get_docker_info() {
     sudo docker ps -a | format_output
     sudo docker images | format_output
   else
-    sudo docker inspect "$1" | format_output
+    sudo docker inspect "$1" | jq
   fi
 }
 
@@ -127,7 +127,7 @@ user_details() {
     }
 
     if [ -z "$username" ]; then
-        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
+        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\t  SESSION UPTIME"
 
         # List all users from /etc/passwd
         local users=$(cut -d: -f1,3 /etc/passwd)
@@ -148,7 +148,7 @@ user_details() {
                 else
                     # Get the session uptime
                     session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
-                    if [ "$session_uptime" = "-" ]; then
+                    if [ "$session_uptime" = "still" ]; then
                         session_uptime="Still logged in"
                     fi
                 fi
@@ -162,7 +162,7 @@ user_details() {
             return 1
         fi
 
-        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
+        echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\t  SESSION UPTIME"
 
         # Get user details from /etc/passwd
         local user_info=$(grep "^$username:" /etc/passwd)
@@ -178,7 +178,7 @@ user_details() {
         else
             # Get the session uptime
             session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
-            if [ "$session_uptime" = "-" ]; then
+            if [ "$session_uptime" = "still" ]; then
                 session_uptime="Still logged in"
             fi
         fi
