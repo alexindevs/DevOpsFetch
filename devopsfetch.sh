@@ -87,9 +87,23 @@ log_nginx_information() {
             }' "$file"
         done
     else
+        nginx_conf="/etc/nginx/nginx.conf"
+        include_paths=$(grep -oP 'include\s+\K[^;]+' "$nginx_conf")
+        config_files=()
+        # Loop through each include path
+        for path in $include_paths; do
+            # Resolve the path to actual files
+            resolved_paths=$(find $(dirname "$path") -name $(basename "$path"))
+            # Add the resolved paths to the array
+            config_files+=($resolved_paths)
+        done
+
+
+
         echo "Searching for Nginx configuration with domain $parameter..."
         echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
+    
+        find /etc/nginx -type l -exec readlink -f {} \; | while read -r file; do
             awk -v search_domain="$parameter" '
             BEGIN { domain = ""; proxy = ""; port = "" }
             /server_name/ {
@@ -150,6 +164,8 @@ user_details() {
                     session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
                     if [ "$session_uptime" = "still" ]; then
                         session_uptime="Still logged in"
+                    elif [ "$session_uptime" = "-" ]; then
+                        session_uptime="N/A"
                     fi
                 fi
 
