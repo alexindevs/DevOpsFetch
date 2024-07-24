@@ -26,7 +26,6 @@ get_docker_info() {
   fi
 }
 
-# This script applies changes to the devopsfetch and devopsfetch_monitor executable, makes them executable, and restarts the devopsfetch_monitor service. 
 log_nginx_information() {
     local parameter=$1
     local files
@@ -162,7 +161,6 @@ user_details() {
             echo "User $username does not exist."
             return 1
         fi
-
 
         echo -e "USERNAME\tHOME DIRECTORY\t\t\tSHELL\t\t\tLAST LOGIN\t\tSESSION UPTIME"
 
