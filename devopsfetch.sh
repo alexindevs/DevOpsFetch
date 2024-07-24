@@ -26,6 +26,7 @@ get_docker_info() {
   else
     sudo docker inspect "$1" | jq -r '[
       .[0] | {
+        ID: (.Id[0:16]),
         NAME: ((.Name // .RepoTags[0])),
         CREATED: .Created,
         STATUS: .State.Status,
