@@ -143,7 +143,7 @@ user_details() {
                     session_uptime="N/A"
                 else
                     session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
-                    if [ "$session_uptime" = "still" || "$session_uptime" = "-" ]; then
+                    if [ "$session_uptime" = "still" ] || [ "$session_uptime" = "-" ]; then
                         session_uptime="Still logged in"
                     fi
                 fi
@@ -173,7 +173,7 @@ user_details() {
         else
             # Get the session uptime
             session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
-            if [ "$session_uptime" = "still" || "$session_uptime" = "-" ]; then
+            if [ "$session_uptime" = "still" ] || [ "$session_uptime" = "-" ]; then
                 session_uptime="Still logged in"
             fi
         fi
