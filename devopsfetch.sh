@@ -5,6 +5,7 @@ USER=$(logname)
 LOGFILE="/home/$USER/devopsfetch.log"
 [ -f "$LOGFILE" ] || touch "$LOGFILE"
 
+# completed
 get_ports() {
   if [ -z "$1" ]; then
     sudo lsof -i -P | format_output
@@ -13,6 +14,7 @@ get_ports() {
   fi
 }
 
+# completed
 get_docker_info() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install it and try again."
@@ -38,109 +40,79 @@ get_docker_info() {
 
 log_nginx_information() {
     local parameter=$1
-    local files
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
     fi
 
-    if [ -z "$parameter" ]; then
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-            awk '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                domain = $2;
-                gsub(/;$/, "", domain);
-            }
-            /listen/ {
-                port = $2;
-                gsub(/;$/, "", port);
-            }
-            /proxy_pass/ {
-                proxy = $2;
-                gsub(/;$/, "", proxy);
-                gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy && port) {
-                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                    domain = "";
-                    proxy = "";
-                    port = "";
-                }
-            }' "$file"
-        done
-
-        return 0
+    nginx_conf="/etc/nginx/nginx.conf"
+    if [ ! -f "$nginx_conf" ]; then
+        echo "Nginx configuration file not found at $nginx_conf"
+        return 1
     fi
 
-    if [[ $parameter =~ ^[0-9]+$ ]]; then
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-            awk -v search_port="$parameter" '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                domain = $2;
-                gsub(/;$/, "", domain);
+    # Function to get all included files
+    get_included_files() {
+        local conf_file=$1
+        local base_dir=$(dirname "$conf_file")
+        grep -oP 'include\s+\K[^;]+' "$conf_file" | while read -r include_path; do
+            if [[ "$include_path" == /* ]]; then
+                find "$include_path" -type f 2>/dev/null
+            else
+                find "$base_dir/$include_path" -type f 2>/dev/null
+            fi
+        done
+    }
+
+    # Get all configuration files
+    config_files=$(get_included_files "$nginx_conf")
+    config_files="$nginx_conf $config_files"
+
+    # Function to process each file
+    process_file() {
+        local file=$1
+        local search=$2
+        awk -v search="$search" '
+        BEGIN { domain = ""; proxy = ""; port = "80"; }
+        /server_name/ { 
+            domain = $2; 
+            gsub(/;$/, "", domain);
+        }
+        /listen/ { 
+            port = $2; 
+            gsub(/;$/, "", port);
+        }
+        /proxy_pass/ { 
+            proxy = $2; 
+            gsub(/;$/, "", proxy);
+            gsub(/^http:\/\//, "", proxy);
+        }
+        END {
+            if ((search == "" || domain ~ search || port ~ search) && domain != "") {
+                if (proxy == "") proxy = "N/A";
+                printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
             }
-            /listen/ {
-                if ($2 ~ search_port) {
-                    port = $2;
-                    gsub(/;$/, "", port);
-                    proxy = "http://localhost:" port;
-                    if (domain && proxy && port) {
-                        printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                        domain = "";
-                        proxy = "";
-                        port = "";
-                    }
-                }
-            }' "$file"
+        }' "$file"
+    }
+
+    echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
+    
+    if [ -z "$parameter" ]; then
+        for file in $config_files; do
+            process_file "$file" ""
+        done
+    elif [[ $parameter =~ ^[0-9]+$ ]]; then
+        for file in $config_files; do
+            process_file "$file" "$parameter"
         done
     else
-        nginx_conf="/etc/nginx/nginx.conf"
-        include_paths=$(grep -oP 'include\s+\K[^;]+' "$nginx_conf")
-        config_files=()
-        # Loop through each include path
-        for path in $include_paths; do
-            # Resolve the path to actual files
-            resolved_paths=$(find $(dirname "$path") -name $(basename "$path"))
-            # Add the resolved paths to the array
-            config_files+=($resolved_paths)
-        done
-
-
-
         echo "Searching for Nginx configuration with domain $parameter..."
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-    
-        find /etc/nginx -type l -exec readlink -f {} \; | while read -r file; do
-            awk -v search_domain="$parameter" '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                if ($2 ~ search_domain) {
-                    domain = $2;
-                    gsub(/;$/, "", domain);
-                }
-            }
-            /listen/ {
-                port = $2;
-                gsub(/;$/, "", port);
-            }
-            /proxy_pass/ {
-                proxy = $2;
-                gsub(/;$/, "", proxy);
-                gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy && port) {
-                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                    domain = "";
-                    proxy = "";
-                    port = "";
-                }
-            }' "$file"
+        for file in $config_files; do
+            process_file "$file" "$parameter"
         done
     fi
 }
-
+# completed
 user_details() {
     local username=$1
 
@@ -212,6 +184,7 @@ user_details() {
     fi
 }
 
+# completed
 display_activities() {
     local start_date="$1"
     local end_date="$2"
@@ -259,7 +232,6 @@ display_activities() {
         process_log_file "$current_log"
     fi
 }
-
 
 format_output() {
   column -t -s $'\t'
