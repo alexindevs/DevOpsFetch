@@ -2,6 +2,12 @@
 
 # This script applies changes to the devopsfetch and devopsfetch_monitor executable, makes them executable, and restarts the devopsfetch_monitor service. 
 
+# Ensure the script is run as root
+if [ "$EUID" -ne 0 ]; then
+    echo "Please run this script as root or using sudo."
+    exit 1
+fi
+
 # Apply changes to devopsfetch executable
 cp devopsfetch.sh /usr/local/bin/devopsfetch
 chmod +x /usr/local/bin/devopsfetch
