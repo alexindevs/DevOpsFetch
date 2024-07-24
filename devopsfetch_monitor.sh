@@ -26,35 +26,11 @@ monitor_user_activities() {
             if [ "$user" != "root" ] && is_regular_user "$user"; then
                 log_message "User Activity" "User logged in successfully: $user from $ip"
             fi
-        # Failed login attempt
-        elif echo "$line" | grep -q "sshd.*Failed password"; then
-            user=$(echo "$line" | awk '{print $(NF-5)}')
-            ip=$(echo "$line" | awk '{print $(NF-3)}')
-            log_message "Security Alert" "Failed login attempt: $user from $ip"
-        # User disconnection
-        elif echo "$line" | grep -q "sshd.*Disconnected from"; then
-            user=$(echo "$line" | awk '{print $9}')
-            ip=$(echo "$line" | awk '{print $11}')
-            log_message "User Activity" "User disconnected: $user from $ip"
         # Sudo command execution
         elif echo "$line" | grep -q "sudo:.*COMMAND="; then
             user=$(echo "$line" | awk -F': ' '{print $2}' | awk '{print $1}')
             command=$(echo "$line" | awk -F'COMMAND=' '{print $2}')
             log_message "User Activity" "Sudo command executed by $user: $command"
-        # Invalid user login attempt
-        elif echo "$line" | grep -q "sshd.*Invalid user"; then
-            user=$(echo "$line" | awk '{print $8}')
-            ip=$(echo "$line" | awk '{print $10}')
-            log_message "Security Alert" "Invalid user login attempt: $user from $ip"
-        # Connection closed by invalid user
-        elif echo "$line" | grep -q "sshd.*Connection closed by invalid user"; then
-            user=$(echo "$line" | awk '{print $11}')
-            ip=$(echo "$line" | awk '{print $13}')
-            log_message "Security Alert" "Connection closed for invalid user: $user from $ip"
-        # PAM authentication failure
-        elif echo "$line" | grep -q "pam_unix(sshd:auth).*authentication failure"; then
-            ip=$(echo "$line" | awk -F'rhost=' '{print $2}' | awk '{print $1}')
-            log_message "Security Alert" "PAM authentication failure from $ip"
         # SSH session opened
         elif echo "$line" | grep -q "sshd.*pam_unix(sshd:session).*session opened"; then
             user=$(echo "$line" | awk '{print $(NF-3)}')
