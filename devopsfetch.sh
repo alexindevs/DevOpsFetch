@@ -40,105 +40,68 @@ get_docker_info() {
 
 log_nginx_information() {
     local parameter=$1
-    local files
+    local nginx_conf="/etc/nginx/nginx.conf"
+
     if ! command -v nginx &> /dev/null; then
         echo "Nginx is not installed."
         return 1
     fi
+
+    # Function to process Nginx configuration files
+    process_nginx_config() {
+        local file=$1
+        local search_param=$2
+        local search_type=$3
+
+        awk -v search="$search_param" -v type="$search_type" '
+        BEGIN { domain = ""; proxy = ""; port = "" }
+        /server_name/ {
+            domain = $2;
+            gsub(/;$/, "", domain);
+        }
+        /listen/ {
+            port = $2;
+            gsub(/;$/, "", port);
+        }
+        /proxy_pass/ {
+            proxy = $2;
+            gsub(/;$/, "", proxy);
+            gsub(/^http:\/\//, "", proxy);
+        }
+        {
+            if (domain && port && (type == "all" || 
+                (type == "domain" && domain ~ search) || 
+                (type == "port" && port ~ search))) {
+                if (!proxy) proxy = "N/A";
+                printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
+                domain = ""; proxy = ""; port = "";
+            }
+        }' "$file"
+    }
+
+    # Get all Nginx configuration files
+    local config_files=$(find /etc/nginx -type f -name "*.conf" -o -name "*.conf")
+
+    echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
+
     if [ -z "$parameter" ]; then
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-            awk '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                domain = $2;
-                gsub(/;$/, "", domain);
-            }
-            /listen/ {
-                port = $2;
-                gsub(/;$/, "", port);
-            }
-            /proxy_pass/ {
-                proxy = $2;
-                gsub(/;$/, "", proxy);
-                gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy && port) {
-                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                    domain = "";
-                    proxy = "";
-                    port = "";
-                }
-            }' "$file"
+        # Display all configurations
+        for file in $config_files; do
+            process_nginx_config "$file" "" "all"
         done
-        return 0
-    fi
-    if [[ $parameter =~ ^[0-9]+$ ]]; then
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-        find /etc/nginx/sites-enabled -type l -exec readlink -f {} \; | while read -r file; do
-            awk -v search_port="$parameter" '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                domain = $2;
-                gsub(/;$/, "", domain);
-            }
-            /listen/ {
-                if ($2 ~ search_port) {
-                    port = $2;
-                    gsub(/;$/, "", port);
-                    proxy = "http://localhost:" port;
-                    if (domain && proxy && port) {
-                        printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                        domain = "";
-                        proxy = "";
-                        port = "";
-                    }
-                }
-            }' "$file"
+    elif [[ $parameter =~ ^[0-9]+$ ]]; then
+        # Search by port
+        for file in $config_files; do
+            process_nginx_config "$file" "$parameter" "port"
         done
     else
-        nginx_conf="/etc/nginx/nginx.conf"
-        include_paths=$(grep -oP 'include\s+\K[^;]+' "$nginx_conf")
-        config_files=()
-        # Loop through each include path
-        for path in $include_paths; do
-            # Resolve the path to actual files
-            resolved_paths=$(find $(dirname "$path") -name $(basename "$path"))
-            # Add the resolved paths to the array
-            config_files+=($resolved_paths)
-        done
-
-
-
-        echo "Searching for Nginx configuration with domain $parameter..."
-        echo -e "SERVER DOMAIN                       PORT    PROXY                CONFIGURATION FILE"
-
-        find /etc/nginx -type l -exec readlink -f {} \; | while read -r file; do
-            awk -v search_domain="$parameter" '
-            BEGIN { domain = ""; proxy = ""; port = "" }
-            /server_name/ {
-                if ($2 ~ search_domain) {
-                    domain = $2;
-                    gsub(/;$/, "", domain);
-                }
-            }
-            /listen/ {
-                port = $2;
-                gsub(/;$/, "", port);
-            }
-            /proxy_pass/ {
-                proxy = $2;
-                gsub(/;$/, "", proxy);
-                gsub(/^http:\/\//, "", proxy);
-                if (domain && proxy && port) {
-                    printf "%-35s %-7s %-20s %s\n", domain, port, proxy, FILENAME;
-                    domain = "";
-                    proxy = "";
-                    port = "";
-                }
-            }' "$file"
+        # Search by domain
+        for file in $config_files; do
+            process_nginx_config "$file" "$parameter" "domain"
         done
     fi
 }
+
 # completed
 user_details() {
     local username=$1
