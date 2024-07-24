@@ -19,10 +19,19 @@ get_docker_info() {
     return 1
   fi
   if [ -z "$1" ]; then
-    sudo docker ps -a | format_output
-    sudo docker images | format_output
+    echo "CONTAINER ID        IMAGE               NAME                CREATED             STATUS              PORTS"
+    sudo docker ps -a --format "{{.ID}}\t{{.Image}}\t{{.Names}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" | column -t -s $'\t'
+    echo -e "\nIMAGE               CREATED             SIZE"
+    sudo docker images --format "{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}" | column -t -s $'\t'
   else
-    sudo docker inspect "$1" | jq
+    echo "NAME                     CREATED                     STATUS              ARGS                EXPOSED PORTS"
+    sudo docker inspect "$1" | jq -r '.[0] | [
+      .Name // .["RepoTags"][0] // null,
+      .Created,
+      .State.Status,
+      (.Config.Cmd | join(" ")),
+      (.Config.ExposedPorts | keys | join(", "))
+    ] | @tsv' | column -t -s $'\t'
   fi
 }
 
