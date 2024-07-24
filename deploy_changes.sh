@@ -10,6 +10,9 @@ chmod +x /usr/local/bin/devopsfetch
 cp devopsfetch_monitor.sh /usr/local/bin/devopsfetch_monitor
 chmod +x /usr/local/bin/devopsfetch_monitor
 
+cp log_rotation.sh /usr/local/bin/devopsfetch_log_rotation
+chmod +x /usr/local/bin/devopsfetch_log_rotation
+
 # Restart devopsfetch_monitor service
 systemctl restart devopsfetch_monitor
 
