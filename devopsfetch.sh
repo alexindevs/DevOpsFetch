@@ -131,7 +131,8 @@ user_details() {
                 local user_home=$(echo "$user_info" | cut -d: -f6)
                 local user_shell=$(echo "$user_info" | cut -d: -f7)
                 # Get last login time
-                local last_login=$(last -F | grep "^$user " | head -1 | awk '{print $5, $6, $7, $8}')
+                local last_login=$(lastlog -u "$user" | awk 'NR==2 {print $2, $3, $4, $5, $6, $7}')
+
                 if [ -z "$last_login" ]; then
                     last_login="Never logged in"
                     session_uptime="N/A"
@@ -140,7 +141,7 @@ user_details() {
                     session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
                     if [ "$session_uptime" = "still" ]; then
                         session_uptime="Still logged in"
-                    elif [ "$session_uptime" = "-" ]; then
+                    else
                         session_uptime="N/A"
                     fi
                 fi
@@ -159,7 +160,8 @@ user_details() {
         local user_home=$(echo "$user_info" | cut -d: -f6)
         local user_shell=$(echo "$user_info" | cut -d: -f7)
         # Get last login time
-        local last_login=$(last -F | grep "^$username " | head -1 | awk '{print $5, $6, $7, $8}')
+        local last_login=$(lastlog -u "$username" | awk 'NR==2 {print $2, $3, $4, $5, $6, $7}')
+
         if [ -z "$last_login" ]; then
             last_login="Never logged in"
             session_uptime="N/A"
@@ -168,6 +170,8 @@ user_details() {
             session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
             if [ "$session_uptime" = "still" ]; then
                 session_uptime="Still logged in"
+            else
+                session_uptime="N/A"
             fi
         fi
         printf "%-15s %-30s %-24s %-25s %-18s\n" "$username" "$user_home" "$user_shell" "$last_login" "$session_uptime"
