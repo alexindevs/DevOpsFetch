@@ -13,25 +13,26 @@ get_ports() {
   fi
 }
 
+
 get_docker_info() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install it and try again."
     return 1
   fi
+
   if [ -z "$1" ]; then
-    echo "CONTAINER ID        IMAGE               NAME                CREATED             STATUS              PORTS"
-    sudo docker ps -a --format "{{.ID}}\t{{.Image}}\t{{.Names}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}" | column -t -s $'\t'
-    echo -e "\nIMAGE               CREATED             SIZE"
-    sudo docker images --format "{{.Repository}}:{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}" | column -t -s $'\t'
+    sudo docker ps -a --format 'table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Ports}}' | column -t -s $'\t'
+    sudo docker images --format 'table {{.Repository}}\t{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}' | column -t -s $'\t'
   else
-    echo "NAME                     CREATED                     STATUS              ARGS                EXPOSED PORTS"
-    sudo docker inspect "$1" | jq -r '.[0] | [
-      .Name // .["RepoTags"][0] // null,
-      .Created,
-      .State.Status,
-      (.Config.Cmd | join(" ")),
-      (.Config.ExposedPorts | keys | join(", "))
-    ] | @tsv' | column -t -s $'\t'
+    sudo docker inspect "$1" | jq -r '[
+      .[0] | {
+        NAME: ((.Name // .RepoTags[0])),
+        CREATED: .Created,
+        STATUS: .State.Status,
+        ARGS: (.Config.Cmd | join(" ")),
+        "EXPOSED PORTS": (.Config.ExposedPorts | keys | join(", "))
+      }
+    ] | (.[0] | keys_unsorted), (.[] | [.[]]) | @tsv' | column -t -s $'\t'
   fi
 }
 
@@ -140,7 +141,6 @@ log_nginx_information() {
     fi
 }
 
-
 user_details() {
     local username=$1
 
@@ -196,7 +196,6 @@ user_details() {
 
         # Get last login time
         local last_login=$(sudo lastlog -u "$username" | tail -n 1 | awk '{print $4, $5, $6, $7, $8}')
-
 
         if [ -z "$last_login" ]; then
             last_login="Never logged in"
