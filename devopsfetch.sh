@@ -138,13 +138,12 @@ user_details() {
                 # Get last login time
                 local last_login=$(sudo lastlog -u "$user" | tail -n 1 | awk '{print $4, $5, $6, $7, $8}')
 
-                session_uptime="N/A"
-
                 if [ -z "$last_login" ]; then
                     last_login="Never logged in"
+                    session_uptime="N/A"
                 else
                     # Get the session uptime
-                    session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
+                    session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
                     if [ "$session_uptime" = "still" ]; then
                         session_uptime="Still logged in"
                     fi
