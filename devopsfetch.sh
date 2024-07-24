@@ -112,6 +112,7 @@ log_nginx_information() {
         done
     fi
 }
+
 # completed
 user_details() {
     local username=$1
@@ -135,18 +136,16 @@ user_details() {
                 local user_shell=$(echo "$user_info" | cut -d: -f7)
 
                 # Get last login time
-                local last_login=$(last -F | grep "^$user " | head -1 | awk '{print $5, $6, $7, $8}')
+                local last_login=$(sudo lastlog -u "$username" | tail -n 1 | awk '{print $4, $5, $6, $7, $8}')
 
                 if [ -z "$last_login" ]; then
                     last_login="Never logged in"
                     session_uptime="N/A"
                 else
                     # Get the session uptime
-                    session_uptime=$(last -F | grep "^$user " | head -1 | awk '{print $9}')
-                    if [ "$session_uptime" = "still" ]; then
+                    session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
+                    if [ "$session_uptime" = "still" || "$session_uptime" = "-" ]; then
                         session_uptime="Still logged in"
-                    elif [ "$session_uptime" = "-" ]; then
-                        session_uptime="N/A"
                     fi
                 fi
 
@@ -175,7 +174,7 @@ user_details() {
         else
             # Get the session uptime
             session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
-            if [ "$session_uptime" = "still" ]; then
+            if [ "$session_uptime" = "still" || "$session_uptime" = "-" ]; then
                 session_uptime="Still logged in"
             fi
         fi
