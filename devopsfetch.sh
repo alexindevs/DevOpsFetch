@@ -13,7 +13,6 @@ get_ports() {
   fi
 }
 
-
 get_docker_info() {
   if ! command -v docker &> /dev/null; then
     echo "Docker is not installed. Please install it and try again."
@@ -220,7 +219,7 @@ display_activities() {
     local current_log="$log_dir/devopsfetch.log"
 
     if [ -z "$start_date" ]; then
-        start_date=$(ls "$log_dir/devopsfetch-"*.log | sort | head -n 1 | sed 's/.*devopsfetch-\(.*\)\.log/\1/')
+        start_date=$(ls "$log_dir/devopsfetch-"*.log "$log_dir/devopsfetch.log" 2>/dev/null | sort | head -n 1 | sed 's/.*devopsfetch-\?\(.*\)\.log/\1/')
     fi
 
     if [ -z "$end_date" ]; then
