@@ -142,7 +142,6 @@ user_details() {
                     last_login="Never logged in"
                     session_uptime="N/A"
                 else
-                    # Get the session uptime
                     session_uptime=$(last -F | grep "^$username " | head -1 | awk '{print $9}')
                     if [ "$session_uptime" = "still" || "$session_uptime" = "-" ]; then
                         session_uptime="Still logged in"
